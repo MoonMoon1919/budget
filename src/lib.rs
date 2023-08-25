@@ -33,9 +33,18 @@ impl BudgetManager {
         self.budget.available_funds()
     }
 
-    fn add_tx(&mut self, tx: Transaction) {
+    fn id(&self) -> &str {
+        &self.budget.id
+    }
+
+    fn add_tx(&mut self, name: String, value: f64) -> String {
+        let tx = Transaction::new(name, value, String::from(self.id()));
+        let txc = tx.clone().id;
+
         self.budget.withdraw(&tx.value);
         self.transactions.borrow_mut().push(tx);
+
+        txc
     }
 
     fn find_tx_index(&self, id: &String) -> Result<usize, String> {
@@ -79,7 +88,7 @@ impl BudgetManager {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Budget {
     id: String,
     total: f64,
@@ -106,19 +115,21 @@ impl Budget {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Transaction {
     id: String,
     name: String,
     value: f64,
+    budget_id: String,
 }
 
 impl Transaction {
-    fn new(name: String, value: f64) -> Self {
+    fn new(name: String, value: f64, budget_id: String) -> Self {
         Transaction {
             id: Uuid::new_v4().to_string(),
             name,
             value,
+            budget_id,
         }
     }
 
@@ -140,9 +151,8 @@ mod tests {
     fn budget_manager_can_add_transaction() {
         let budg = Budget::new(200.00_f64);
         let mut budgman = BudgetManager::new(String::from("my-budget"), Uuid::new_v4().to_string(), budg);
-        let tx = Transaction::new(String::from("cheeseborger"), 3.99_f64);
 
-        budgman.add_tx(tx);
+        budgman.add_tx(String::from("cheeseborger"), 3.99_f64);
 
         assert_eq!(budgman.transactions.borrow().len(), 1);
         assert_eq!(budgman.budget.available_funds(), 196.01_f64)
@@ -152,10 +162,8 @@ mod tests {
     fn budget_manager_can_remove_transaction() {
         let budg = Budget::new(200.00_f64);
         let mut budgman = BudgetManager::new(String::from("my-budget"), Uuid::new_v4().to_string(), budg);
-        let tx = Transaction::new(String::from("cheeseborger"), 3.99_f64);
-        let tx_id = tx.id.clone();
 
-        budgman.add_tx(tx);
+        let tx_id = budgman.add_tx(String::from("cheeseborger"), 3.99_f64);
         budgman.remove_tx(tx_id);
 
         assert_eq!(budgman.transactions.borrow().len(), 0);
@@ -182,7 +190,7 @@ mod tests {
 
     #[test]
     fn tx_can_get_renamed() {
-        let mut tx = Transaction::new(String::from("cheeseborger"), 3.99_f64);
+        let mut tx = Transaction::new(String::from("cheeseborger"), 3.99_f64, String::from("abc123"));
 
         tx.rename(String::from("cheeseburger"));
 
@@ -191,7 +199,7 @@ mod tests {
 
     #[test]
     fn tx_can_have_value_updated() {
-        let mut tx = Transaction::new(String::from("cheeseborger"), 3.99_f64);
+        let mut tx = Transaction::new(String::from("cheeseborger"), 3.99_f64, String::from("abc123"));
 
         tx.update_value(4.99_f64);
 
