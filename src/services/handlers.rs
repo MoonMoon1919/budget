@@ -44,6 +44,46 @@ impl AddTransaction {
     }
 }
 
+struct RemoveTransaction {
+    user_id: String,
+    budget_id: String,
+    transaction_id: String
+}
+
+impl RemoveTransaction {
+    fn new(user_id: String, budget_id: String, transaction_id: String) -> Self {
+        RemoveTransaction {
+            user_id,
+            budget_id,
+            transaction_id
+        }
+    }
+
+    fn run(&self) {
+        todo!()
+    }
+}
+
+struct UpdateTransaction {
+    user_id: String,
+    budget_id: String,
+    transaction_id: String,
+    new_val: f64
+}
+
+impl UpdateTransaction {
+    fn new(user_id: String, budget_id: String, transaction_id: String, new_val: f64) -> Self {
+        UpdateTransaction { user_id,
+            budget_id,
+            transaction_id,
+            new_val
+        }
+    }
+
+    fn run(&self) {
+        todo!()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -64,6 +104,10 @@ mod tests {
 
     fn budget_max() -> f64 {
         200.00_f64
+    }
+
+    fn transaction_id() -> String {
+        Uuid::new_v4().to_string()
     }
 
     fn create_budget_cmd() -> CreateBudget {
@@ -102,6 +146,37 @@ mod tests {
             budget_id(),
             String::from("cheeseborger"),
             9.99_f64
+        );
+
+        // When
+        cmd.run();
+
+        // Then
+    }
+
+    #[test]
+    fn user_can_remove_transaction() {
+        // Given
+        let cmd = RemoveTransaction::new(
+            user_id(),
+            budget_id(),
+            transaction_id()
+        );
+
+        // When
+        cmd.run();
+
+        // Then
+    }
+
+    #[test]
+    fn user_can_update_transaction() {
+        // Given
+        let cmd = UpdateTransaction::new(
+            user_id(),
+            budget_id(),
+            transaction_id(),
+            3.99_f64
         );
 
         // When
