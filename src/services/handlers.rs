@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-#![allow(unused_variables)]
 
 use crate::domain::models;
+use crate::adapters::repository;
 
 /// This module contains handler functions that call business logic and persistence layers
 /// This module is the API for consumers, e.g., an web API or CLI that is implemented later
@@ -17,7 +17,7 @@ impl CreateBudget {
         CreateBudget { user_id, budget_name, total }
     }
 
-    fn run(&self) -> models::BudgetManager {
+    fn run<T: repository::Repository>(&self, repo: &T) -> models::BudgetManager {
         todo!()
     }
 }
@@ -39,7 +39,7 @@ impl AddTransaction {
         }
     }
 
-    fn run(&self) {
+    fn run<T: repository::Repository>(&self, repo: &T) {
         todo!()
     }
 }
@@ -59,7 +59,7 @@ impl RemoveTransaction {
         }
     }
 
-    fn run(&self) {
+    fn run<T: repository::Repository>(&self, repo: &T) {
         todo!()
     }
 }
@@ -80,7 +80,7 @@ impl UpdateTransaction {
         }
     }
 
-    fn run(&self) {
+    fn run<T: repository::Repository>(&self, repo: &T) {
         todo!()
     }
 }
@@ -89,6 +89,9 @@ impl UpdateTransaction {
 mod tests {
     use super::*;
     use uuid::Uuid;
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    use crate::adapters::repository;
 
     fn user_id() -> String {
         Uuid::new_v4().to_string()
@@ -127,13 +130,51 @@ mod tests {
         )
     }
 
+    // Fake repository
+    struct InMemoryRepository {
+        budgets: RefCell<HashMap<String, models::BudgetManager>>
+    }
+
+    impl InMemoryRepository {
+        fn new() -> Self {
+            InMemoryRepository {
+                budgets: RefCell::new(HashMap::new())
+            }
+        }
+    }
+
+    impl repository::Repository for InMemoryRepository {
+        fn add(&self, item: models::BudgetManager) {
+            self.budgets.borrow_mut().insert(item.id().to_string(), item);
+        }
+
+        fn get(&self, id: &str) -> models::BudgetManager {
+            let budgets = self.budgets.borrow();
+            let budget = budgets.get(id);
+
+            let budg = match budget {
+                Some(result) => result,
+                _ => panic!("Budget not found")
+            };
+
+            budg.clone()
+        }
+
+        fn delete(&self, id: &str) {
+            let mut budgets = self.budgets.borrow_mut();
+
+            budgets.remove(id).unwrap();
+        }
+    }
+
     #[test]
     fn user_can_create_budget() {
         // Given
         let cmd = create_budget_cmd();
+        let repo = InMemoryRepository::new();
 
         // When
-        let bdg = cmd.run();
+        let bdg = cmd.run(&repo);
 
         // Then
         assert_eq!(bdg.name(), String::from("my-budget"))
@@ -147,9 +188,10 @@ mod tests {
             String::from("cheeseborger"),
             9.99_f64
         );
+        let repo = InMemoryRepository::new();
 
         // When
-        cmd.run();
+        cmd.run(&repo);
 
         // Then
     }
@@ -162,9 +204,10 @@ mod tests {
             budget_id(),
             transaction_id()
         );
+        let repo = InMemoryRepository::new();
 
         // When
-        cmd.run();
+        cmd.run(&repo);
 
         // Then
     }
@@ -178,9 +221,10 @@ mod tests {
             transaction_id(),
             3.99_f64
         );
+        let repo = InMemoryRepository::new();
 
         // When
-        cmd.run();
+        cmd.run(&repo);
 
         // Then
     }

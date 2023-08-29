@@ -1,6 +1,5 @@
 // Temporary while developing to reduce noise
 #![allow(dead_code)]
-#![allow(unused_variables)]
 
 use uuid::Uuid;
 
@@ -12,7 +11,7 @@ struct User {
     budgets: HashMap<String, BudgetManager>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BudgetManager {
     budget: Budget,
     transactions: RefCell<Vec<Transaction>>
