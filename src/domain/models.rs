@@ -19,9 +19,9 @@ pub struct BudgetManager {
 }
 
 impl BudgetManager {
-    pub fn new(budget: Budget) -> Self {
+    pub fn new(budget: Budget, transactions: RefCell<Vec<Transaction>>) -> Self {
         BudgetManager {
-            transactions: RefCell::new(vec![]),
+            transactions: transactions,
             budget
         }
     }
@@ -119,7 +119,7 @@ impl Budget {
 }
 
 #[derive(Debug, Clone)]
-struct Transaction {
+pub struct Transaction {
     id: String,
     name: String,
     value: f64,
@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn budget_manager_can_add_transaction() {
         let budg = Budget::new(String::from("my-budget"), 200.00_f64);
-        let mut budgman = BudgetManager::new(budg);
+        let mut budgman = BudgetManager::new(budg, RefCell::new(vec![]));
 
         budgman.add_tx(String::from("cheeseborger"), 3.99_f64);
 
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn budget_manager_can_remove_transaction() {
         let budg = Budget::new(String::from("my-budget"), 200.00_f64);
-        let mut budgman = BudgetManager::new(budg);
+        let mut budgman = BudgetManager::new(budg, RefCell::new(vec![]));
 
         let tx_id = budgman.add_tx(String::from("cheeseborger"), 3.99_f64);
         budgman.remove_tx(tx_id);
