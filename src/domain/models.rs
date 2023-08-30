@@ -112,8 +112,17 @@ impl Budget {
         self.total
     }
 
+    fn can_withdraw(&self, val: &f64) -> bool {
+        self.total - val > 0_f64
+    }
+
     fn withdraw(&mut self, val: &f64) {
-        self.total = self.total - val;
+        if self.can_withdraw(val) {
+            self.total = self.total - val;
+        } else {
+            // TODO: use Result instead of panic
+            panic!("Insufficient funds, cannot withdraw {}", val)
+        }
     }
 
     fn deposit(&mut self, val: &f64) {
@@ -187,6 +196,14 @@ mod tests {
         budget.withdraw(&10.00_f64);
 
         assert_eq!(budget.available_funds(), 190.00_f64)
+    }
+
+    #[test]
+    #[should_panic]
+    fn budget_cant_withdraw_money_more_than_available() {
+        let mut budget = Budget::new(String::from("my-budget"), 9.00_f64);
+
+        budget.withdraw(&10.00_f64);
     }
 
     #[test]
