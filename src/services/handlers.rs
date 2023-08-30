@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::cell::RefCell;
+
 use crate::domain::models;
 use crate::adapters::repository;
 
@@ -18,7 +20,12 @@ impl CreateBudget {
     }
 
     fn run<T: repository::Repository>(&self, repo: &T) -> models::BudgetManager {
-        todo!()
+        let budget = models::Budget::new(self.budget_name.clone(), self.total);
+        let budget_manager = models::BudgetManager::new(budget, RefCell::new(vec![]));
+
+        repo.add(&budget_manager);
+
+        budget_manager
     }
 }
 
@@ -39,8 +46,14 @@ impl AddTransaction {
         }
     }
 
-    fn run<T: repository::Repository>(&self, repo: &T) {
-        todo!()
+    fn run<T: repository::Repository>(&self, repo: &T) -> String {
+        let mut budget_manager = repo.get(&self.budget_id);
+
+        let tx_id = budget_manager.add_tx(self.name.clone(), self.value);
+
+        repo.add(&budget_manager);
+
+        tx_id
     }
 }
 
@@ -60,7 +73,11 @@ impl RemoveTransaction {
     }
 
     fn run<T: repository::Repository>(&self, repo: &T) {
-        todo!()
+        let mut budget_manager = repo.get(&self.budget_id);
+
+        budget_manager.remove_tx(&self.transaction_id);
+
+        repo.add(&budget_manager)
     }
 }
 
@@ -81,7 +98,11 @@ impl UpdateTransaction {
     }
 
     fn run<T: repository::Repository>(&self, repo: &T) {
-        todo!()
+        let mut budget_manager = repo.get(&self.budget_id);
+
+        budget_manager.update_tx(&self.transaction_id, self.new_val);
+
+        repo.add(&budget_manager);
     }
 }
 
@@ -91,7 +112,7 @@ mod tests {
     use uuid::Uuid;
     use std::cell::RefCell;
     use std::collections::HashMap;
-    use crate::adapters::repository;
+    use crate::adapters::repository::{self, Repository};
 
     fn user_id() -> String {
         Uuid::new_v4().to_string()
@@ -111,14 +132,6 @@ mod tests {
 
     fn transaction_id() -> String {
         Uuid::new_v4().to_string()
-    }
-
-    fn create_budget_cmd() -> CreateBudget {
-        CreateBudget::new(
-            user_id(),
-            budget_name(),
-            budget_max()
-        )
     }
 
     fn add_transaction_cmd(budget_id: String, name: String, value: f64) -> AddTransaction {
@@ -144,8 +157,8 @@ mod tests {
     }
 
     impl repository::Repository for InMemoryRepository {
-        fn add(&self, item: models::BudgetManager) {
-            self.budgets.borrow_mut().insert(item.id().to_string(), item);
+        fn add(&self, item: &models::BudgetManager) {
+            self.budgets.borrow_mut().insert(item.id().to_string(), item.clone());
         }
 
         fn get(&self, id: &str) -> models::BudgetManager {
@@ -153,11 +166,11 @@ mod tests {
             let budget = budgets.get(id);
 
             let budg = match budget {
-                Some(result) => result,
+                Some(result) => result.clone(),
                 _ => panic!("Budget not found")
             };
 
-            budg.clone()
+            budg
         }
 
         fn delete(&self, id: &str) {
@@ -170,62 +183,106 @@ mod tests {
     #[test]
     fn user_can_create_budget() {
         // Given
-        let cmd = create_budget_cmd();
+        let cmd = CreateBudget::new(
+            user_id(),
+            budget_name(),
+            budget_max()
+        );
         let repo = InMemoryRepository::new();
 
         // When
         let bdg = cmd.run(&repo);
 
         // Then
-        assert_eq!(bdg.name(), String::from("my-budget"))
+        // The budget was created with the expected name and total
+        assert_eq!(bdg.name(), budget_name());
+        assert_eq!(bdg.available_funds(), budget_max());
+
+        // We can retrieve the budget from the repository
+        // and the value is equal to the value return from `run()`
+        assert_eq!(repo.get(bdg.id()), bdg);
     }
 
     #[test]
     fn user_can_add_transaction() {
         // Given
+        // Set up data required to run the test
+        let budget_manager = models::BudgetManager::new(
+            models::Budget::new(budget_name(), budget_max()),
+            RefCell::new(vec![])
+        );
+        let repo = InMemoryRepository::new();
+        repo.add(&budget_manager);
+
+        // Set up the command
         let cmd = add_transaction_cmd(
-            budget_id(),
+            budget_manager.id().to_string(),
             String::from("cheeseborger"),
             9.99_f64
         );
-        let repo = InMemoryRepository::new();
 
         // When
         cmd.run(&repo);
 
         // Then
+        let bm = repo.get(budget_manager.id());
+        assert_eq!(bm.available_funds(), 190.01_f64);
     }
 
     #[test]
     fn user_can_remove_transaction() {
         // Given
+        // Set up data required to run the test
+        let mut budget_manager = models::BudgetManager::new(
+            models::Budget::new(budget_name(), budget_max()),
+            RefCell::new(vec![])
+        );
+        let transaction_id = budget_manager.add_tx(String::from("cheeseborger"), 3.99_f64);
+        let repo = InMemoryRepository::new();
+        repo.add(&budget_manager);
+
+        // Set up the command we're going to test!
         let cmd = RemoveTransaction::new(
             user_id(),
-            budget_id(),
-            transaction_id()
+            budget_manager.id().to_string(),
+            transaction_id
         );
-        let repo = InMemoryRepository::new();
 
         // When
         cmd.run(&repo);
 
         // Then
+        let bm = repo.get(budget_manager.id());
+        assert_eq!(bm.available_funds(), budget_max());
     }
 
     #[test]
     fn user_can_update_transaction() {
         // Given
+        // Set up data required to run the test
+        let mut budget_manager = models::BudgetManager::new(
+            models::Budget::new(budget_name(), budget_max()),
+            RefCell::new(vec![])
+        );
+        let transaction_id = budget_manager.add_tx(String::from("cheeseborger"), 3.99_f64);
+        let repo = InMemoryRepository::new();
+        repo.add(&budget_manager);
+
+        println!("{:?}", repo.budgets);
+
+        // Set up the command we're going to test
         let cmd = UpdateTransaction::new(
             user_id(),
-            budget_id(),
-            transaction_id(),
-            3.99_f64
+            budget_manager.id().to_string(),
+            transaction_id,
+            4.99_f64
         );
-        let repo = InMemoryRepository::new();
 
         // When
         cmd.run(&repo);
 
         // Then
+        let bm = repo.get(budget_manager.id());
+        assert_eq!(bm.available_funds(), 195.01_f64);
     }
 }

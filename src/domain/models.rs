@@ -11,7 +11,7 @@ struct User {
     budgets: HashMap<String, BudgetManager>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BudgetManager {
     budget: Budget,
     transactions: RefCell<Vec<Transaction>>
@@ -47,7 +47,7 @@ impl BudgetManager {
         txc
     }
 
-    pub fn find_tx_index(&self, id: &String) -> Result<usize, String> {
+    pub fn find_tx_index(&self, id: &str) -> Result<usize, String> {
         for (i, tx) in self.transactions.borrow().iter().enumerate() {
             if &tx.id == id {
                 return Ok(i)
@@ -59,8 +59,8 @@ impl BudgetManager {
         Err(String::from("Error, not found"))
     }
 
-    pub fn update_tx(&mut self, id: String, val: f64) {
-        let idx = match self.find_tx_index(&id) {
+    pub fn update_tx(&mut self, id: &str, val: f64) {
+        let idx = match self.find_tx_index(id) {
             Ok(i) => i,
             _ => panic!("Transaction not found")
         };
@@ -74,8 +74,8 @@ impl BudgetManager {
     }
 
 
-    pub fn remove_tx(&mut self, id: String) {
-        let idx = match self.find_tx_index(&id) {
+    pub fn remove_tx(&mut self, id: &str) {
+        let idx = match self.find_tx_index(id) {
             Ok(i) => i,
             _ => panic!("Transaction not found")
         };
@@ -88,7 +88,7 @@ impl BudgetManager {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Budget {
     id: String,
     name: String,
@@ -96,12 +96,16 @@ pub struct Budget {
 }
 
 impl Budget {
-    fn new(name: String, total: f64) -> Self {
+    pub fn new(name: String, total: f64) -> Self {
         Budget {
             id: Uuid::new_v4().to_string(),
             name,
             total,
         }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
     fn available_funds(&self) -> f64 {
@@ -117,7 +121,7 @@ impl Budget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
     id: String,
     name: String,
@@ -126,13 +130,17 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    fn new(name: String, value: f64, budget_id: String) -> Self {
+    pub fn new(name: String, value: f64, budget_id: String) -> Self {
         Transaction {
             id: Uuid::new_v4().to_string(),
             name,
             value,
             budget_id,
         }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
     fn rename(&mut self, name: String) {
@@ -166,7 +174,7 @@ mod tests {
         let mut budgman = BudgetManager::new(budg, RefCell::new(vec![]));
 
         let tx_id = budgman.add_tx(String::from("cheeseborger"), 3.99_f64);
-        budgman.remove_tx(tx_id);
+        budgman.remove_tx(&tx_id);
 
         assert_eq!(budgman.transactions.borrow().len(), 0);
         assert_eq!(budgman.available_funds(), 200.00_f64);
