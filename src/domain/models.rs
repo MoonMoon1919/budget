@@ -104,6 +104,10 @@ impl Budget {
         }
     }
 
+    pub fn load(id: String, name: String, total: f64) -> Self {
+        Budget { id, name, total }
+    }
+
     pub fn id(&self) -> &str {
         &self.id
     }
@@ -146,6 +150,10 @@ impl Transaction {
             value,
             budget_id,
         }
+    }
+
+    pub fn load(id: String, name: String, value: f64, budget_id: String) -> Self {
+        Transaction { id, name, value, budget_id }
     }
 
     pub fn id(&self) -> &str {
