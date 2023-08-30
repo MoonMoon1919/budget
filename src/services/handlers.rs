@@ -122,24 +122,14 @@ mod tests {
         String::from("my-budget")
     }
 
-    fn budget_id() -> String {
-        Uuid::new_v4().to_string()
-    }
-
     fn budget_max() -> f64 {
         200.00_f64
     }
 
-    fn transaction_id() -> String {
-        Uuid::new_v4().to_string()
-    }
-
-    fn add_transaction_cmd(budget_id: String, name: String, value: f64) -> AddTransaction {
-        AddTransaction::new(
-            user_id(),
-            budget_id,
-            name,
-            value
+    fn make_empty_budget_manager() -> models::BudgetManager {
+        models::BudgetManager::new(
+            models::Budget::new(budget_name(), budget_max()),
+            RefCell::new(vec![])
         )
     }
 
@@ -207,15 +197,13 @@ mod tests {
     fn user_can_add_transaction() {
         // Given
         // Set up data required to run the test
-        let budget_manager = models::BudgetManager::new(
-            models::Budget::new(budget_name(), budget_max()),
-            RefCell::new(vec![])
-        );
+        let budget_manager = make_empty_budget_manager();
         let repo = InMemoryRepository::new();
         repo.add(&budget_manager);
 
         // Set up the command
-        let cmd = add_transaction_cmd(
+        let cmd = AddTransaction::new(
+            user_id(),
             budget_manager.id().to_string(),
             String::from("cheeseborger"),
             9.99_f64
@@ -233,11 +221,9 @@ mod tests {
     fn user_can_remove_transaction() {
         // Given
         // Set up data required to run the test
-        let mut budget_manager = models::BudgetManager::new(
-            models::Budget::new(budget_name(), budget_max()),
-            RefCell::new(vec![])
-        );
+        let mut budget_manager = make_empty_budget_manager();
         let transaction_id = budget_manager.add_tx(String::from("cheeseborger"), 3.99_f64);
+
         let repo = InMemoryRepository::new();
         repo.add(&budget_manager);
 
@@ -260,15 +246,11 @@ mod tests {
     fn user_can_update_transaction() {
         // Given
         // Set up data required to run the test
-        let mut budget_manager = models::BudgetManager::new(
-            models::Budget::new(budget_name(), budget_max()),
-            RefCell::new(vec![])
-        );
+        let mut budget_manager = make_empty_budget_manager();
         let transaction_id = budget_manager.add_tx(String::from("cheeseborger"), 3.99_f64);
+
         let repo = InMemoryRepository::new();
         repo.add(&budget_manager);
-
-        println!("{:?}", repo.budgets);
 
         // Set up the command we're going to test
         let cmd = UpdateTransaction::new(
