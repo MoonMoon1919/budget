@@ -20,3 +20,11 @@ Budget can has the following functionality:
 - The value of a transaction is removed _from the allocated budget_ max on add
 - The value of a transaction is re-added _to the allocated budget_ max on removal
 - The original value of a transaction is re-added, then the new value removed, _from the allocated budget_ max on value change
+
+## SQLite
+
+Create the DB with some seeded data
+
+```bash
+sqlite3 budgets.db < create_tables.sql
+```
