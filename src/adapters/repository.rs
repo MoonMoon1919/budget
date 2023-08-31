@@ -124,7 +124,11 @@ impl Repository for SQLiteRepository {
         models::BudgetManager::new(budget, RefCell::new(tx))
     }
 
-    fn delete(&self, #[allow(unused)] id: &str) {}
+    fn delete(&self, id: &str) {
+        let conn = self.conn.borrow();
+        let mut statement = conn.prepare("DELETE FROM budgets WHERE id = ?1").unwrap();
+        statement.execute(params![id]).unwrap();
+    }
 }
 
 #[cfg(test)]
@@ -157,5 +161,20 @@ mod tests {
 
         assert_eq!(bm.available_funds(), retrieved_bm.available_funds());
         assert_eq!(bm.transactions(), retrieved_bm.transactions());
+    }
+
+    #[test]
+    #[should_panic]
+    fn can_delete_budget_manager_aggregate() {
+        // Given
+        let repo = SQLiteRepository::new(String::from("budgets.db"));
+        let bm = build_budget_manager_with_tx();
+        repo.add(&bm);
+
+        // When
+        repo.delete(&bm.id());
+
+        // Then
+        repo.get(&bm.id());
     }
 }
