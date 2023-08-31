@@ -13,13 +13,14 @@ CREATE TABLE IF NOT EXISTS transactions (
     budget_id TEXT NOT NULL,
     FOREIGN KEY (budget_id)
        REFERENCES budgets (id)
+       ON DELETE CASCADE
 );
 
-INSERT INTO budgets (id, name, total)
-VALUES ("576bc364-7574-40ce-92ca-f488c613b7ea", "my-budget", 200.00);
+-- INSERT INTO budgets (id, name, total)
+-- VALUES ("576bc364-7574-40ce-92ca-f488c613b7ea", "my-budget", 200.00);
 
-INSERT INTO transactions (id, name, value, budget_id)
-VALUES ("621dba84-399b-4846-8a9e-76a2d1692683", "cheeseborger", 3.99, "576bc364-7574-40ce-92ca-f488c613b7ea")
+-- INSERT INTO transactions (id, name, value, budget_id)
+-- VALUES ("621dba84-399b-4846-8a9e-76a2d1692683", "cheeseborger", 3.99, "576bc364-7574-40ce-92ca-f488c613b7ea")
 
 -- select * from budgets as b
 -- join transactions as t ON b.id == t.budget_id

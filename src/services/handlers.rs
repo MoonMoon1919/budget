@@ -2,8 +2,8 @@
 
 use std::cell::RefCell;
 
-use crate::domain::models;
 use crate::adapters::repository;
+use crate::domain::models;
 
 /// This module contains handler functions that call business logic and persistence layers
 /// This module is the API for consumers, e.g., an web API or CLI that is implemented later
@@ -16,7 +16,11 @@ struct CreateBudget {
 
 impl CreateBudget {
     fn new(user_id: String, budget_name: String, total: f64) -> Self {
-        CreateBudget { user_id, budget_name, total }
+        CreateBudget {
+            user_id,
+            budget_name,
+            total,
+        }
     }
 
     fn run<T: repository::Repository>(&self, repo: &T) -> models::BudgetManager {
@@ -42,7 +46,7 @@ impl AddTransaction {
             user_id,
             budget_id,
             name,
-            value
+            value,
         }
     }
 
@@ -60,7 +64,7 @@ impl AddTransaction {
 struct RemoveTransaction {
     user_id: String,
     budget_id: String,
-    transaction_id: String
+    transaction_id: String,
 }
 
 impl RemoveTransaction {
@@ -68,7 +72,7 @@ impl RemoveTransaction {
         RemoveTransaction {
             user_id,
             budget_id,
-            transaction_id
+            transaction_id,
         }
     }
 
@@ -85,15 +89,16 @@ struct UpdateTransaction {
     user_id: String,
     budget_id: String,
     transaction_id: String,
-    new_val: f64
+    new_val: f64,
 }
 
 impl UpdateTransaction {
     fn new(user_id: String, budget_id: String, transaction_id: String, new_val: f64) -> Self {
-        UpdateTransaction { user_id,
+        UpdateTransaction {
+            user_id,
             budget_id,
             transaction_id,
-            new_val
+            new_val,
         }
     }
 
@@ -109,10 +114,10 @@ impl UpdateTransaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uuid::Uuid;
+    use crate::adapters::repository::{self, Repository};
     use std::cell::RefCell;
     use std::collections::HashMap;
-    use crate::adapters::repository::{self, Repository};
+    use uuid::Uuid;
 
     fn user_id() -> String {
         Uuid::new_v4().to_string()
@@ -129,26 +134,28 @@ mod tests {
     fn make_empty_budget_manager() -> models::BudgetManager {
         models::BudgetManager::new(
             models::Budget::new(budget_name(), budget_max()),
-            RefCell::new(vec![])
+            RefCell::new(vec![]),
         )
     }
 
     // Fake repository
     struct InMemoryRepository {
-        budgets: RefCell<HashMap<String, models::BudgetManager>>
+        budgets: RefCell<HashMap<String, models::BudgetManager>>,
     }
 
     impl InMemoryRepository {
         fn new() -> Self {
             InMemoryRepository {
-                budgets: RefCell::new(HashMap::new())
+                budgets: RefCell::new(HashMap::new()),
             }
         }
     }
 
     impl repository::Repository for InMemoryRepository {
         fn add(&self, item: &models::BudgetManager) {
-            self.budgets.borrow_mut().insert(item.id().to_string(), item.clone());
+            self.budgets
+                .borrow_mut()
+                .insert(item.id().to_string(), item.clone());
         }
 
         fn get(&self, id: &str) -> models::BudgetManager {
@@ -157,7 +164,7 @@ mod tests {
 
             let budg = match budget {
                 Some(result) => result.clone(),
-                _ => panic!("Budget not found")
+                _ => panic!("Budget not found"),
             };
 
             budg
@@ -173,11 +180,7 @@ mod tests {
     #[test]
     fn user_can_create_budget() {
         // Given
-        let cmd = CreateBudget::new(
-            user_id(),
-            budget_name(),
-            budget_max()
-        );
+        let cmd = CreateBudget::new(user_id(), budget_name(), budget_max());
         let repo = InMemoryRepository::new();
 
         // When
@@ -206,7 +209,7 @@ mod tests {
             user_id(),
             budget_manager.id().to_string(),
             String::from("cheeseborger"),
-            9.99_f64
+            9.99_f64,
         );
 
         // When
@@ -228,11 +231,8 @@ mod tests {
         repo.add(&budget_manager);
 
         // Set up the command we're going to test!
-        let cmd = RemoveTransaction::new(
-            user_id(),
-            budget_manager.id().to_string(),
-            transaction_id
-        );
+        let cmd =
+            RemoveTransaction::new(user_id(), budget_manager.id().to_string(), transaction_id);
 
         // When
         cmd.run(&repo);
@@ -257,7 +257,7 @@ mod tests {
             user_id(),
             budget_manager.id().to_string(),
             transaction_id,
-            4.99_f64
+            4.99_f64,
         );
 
         // When

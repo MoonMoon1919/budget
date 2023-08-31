@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 
-use rusqlite::{Connection, params};
+use rusqlite::{params, Connection, Transaction};
 
 use crate::domain::models;
 
@@ -15,7 +15,7 @@ pub trait Repository {
 }
 
 struct SQLiteRepository {
-    conn: Connection
+    conn: RefCell<Connection>,
 }
 
 impl SQLiteRepository {
@@ -24,63 +24,138 @@ impl SQLiteRepository {
 
         let conn = match db {
             Ok(conn) => conn,
-            _ => panic!("Error opening db")
+            _ => panic!("Error opening db"),
         };
 
-        SQLiteRepository { conn }
+        SQLiteRepository {
+            conn: RefCell::new(conn),
+        }
     }
 }
 
-impl Repository for SQLiteRepository {
-    fn add(&self, #[allow(unused)] item: &models::BudgetManager) {}
+fn insert_transactions<'a>(tx: &'a Transaction, transactions: Ref<Vec<models::Transaction>>) {
+    let mut statement = tx
+        .prepare(
+            "INSERT INTO transactions
+        (id, name, value, budget_id) VALUES
+        (?1, ?2, ?3, ?4)",
+        )
+        .unwrap();
 
-    fn get(&self, #[allow(unused)] id: &str) -> models::BudgetManager {
+    for tx in transactions.iter() {
+        statement
+            .execute(params![tx.id(), tx.name(), tx.value(), tx.budget_id()])
+            .unwrap();
+    }
+}
+
+fn insert_budget<'a>(tx: &'a Transaction, budget: &models::Budget) {
+    let mut statement = tx
+        .prepare(
+            "INSERT INTO budgets
+                                                        (id, name, total) VALUES (?1, ?2, ?3)",
+        )
+        .unwrap();
+
+    statement
+        .execute(params![budget.id(), budget.name(), budget.total()])
+        .unwrap();
+}
+
+impl Repository for SQLiteRepository {
+    fn add(&self, item: &models::BudgetManager) {
+        let mut conn = self.conn.borrow_mut();
+
+        let tx = conn.transaction().unwrap();
+
+        insert_budget(&tx, item.budget());
+        insert_transactions(&tx, item.transactions().borrow());
+
+        let result = tx.commit();
+        match result {
+            Ok(_) => (),
+            Err(e) => panic!("{}", e),
+        }
+    }
+
+    fn get(&self, id: &str) -> models::BudgetManager {
         // Get the budget - it sucks to do this in two queries
         // But i don't feel like writing data mapping logic right now
-        let mut budget_statement = self.conn.prepare("SELECT * FROM budgets where id = ?1").unwrap();
+        let conn = self.conn.borrow();
 
-        let budget = budget_statement.query_row(params![id], |row| {
-            let id: String = row.get(0).unwrap();
-            let name: String = row.get(1).unwrap();
-            let total: f64 = row.get(2).unwrap();
+        let mut budget_statement = conn.prepare("SELECT * FROM budgets where id = ?1").unwrap();
 
-            let budget = models::Budget::load(
-                id,
-                name,
-                total,
-            );
+        let budget = budget_statement
+            .query_row(params![id], |row| {
+                let id: String = row.get(0).unwrap();
+                let name: String = row.get(1).unwrap();
+                let total: f64 = row.get(2).unwrap();
 
-            Ok(budget)
-        }).unwrap();
+                let budget = models::Budget::load(id, name, total);
+
+                Ok(budget)
+            })
+            .unwrap();
 
         // Get all the transactions - refactor later to use a join and get all the data in a single go
         // This is fine for quick hacking...
-        let mut statement = self.conn.prepare(
-            "SELECT * FROM transactions
-                WHERE transaction.budget_id = ?1",
-        ).unwrap();
+        let mut statement = conn
+            .prepare(
+                "SELECT * FROM transactions
+                WHERE budget_id = ?1",
+            )
+            .unwrap();
 
-        let row_iter = statement.query_map(params![id], |row| {
-            let id: String = row.get(0)?;
-            let name: String = row.get(1)?;
-            let value: f64 = row.get(2)?;
-            let budget_id: String = row.get(3)?;
+        let row_iter = statement
+            .query_map(params![id], |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                let value: f64 = row.get(2)?;
+                let budget_id: String = row.get(3)?;
 
-            let tx = models::Transaction::load(
-                id,
-                name,
-                value,
-                budget_id
-            );
+                let tx = models::Transaction::load(id, name, value, budget_id);
 
-            Ok(tx)
-        }).unwrap();
+                Ok(tx)
+            })
+            .unwrap();
 
         let tx: Vec<models::Transaction> = row_iter.map(|f| f.unwrap()).collect();
 
         models::BudgetManager::new(budget, RefCell::new(tx))
-
     }
 
     fn delete(&self, #[allow(unused)] id: &str) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn budget_id() -> &'static str {
+        "576bc364-7574-40ce-92ca-f488c613b7ea"
+    }
+
+    fn build_budget_manager_with_tx() -> models::BudgetManager {
+        let budget = models::Budget::new(String::from("my-budget"), 200.00_f64);
+        let mut bm = models::BudgetManager::new(budget, RefCell::new(vec![]));
+        bm.add_tx(String::from("cheeseborger"), 3.99_f64);
+
+        bm
+    }
+
+    #[test]
+    fn can_add_retrieve_budget_manager_aggregate() {
+        // Given
+        let repo = SQLiteRepository::new(String::from("budgets.db"));
+        let bm = build_budget_manager_with_tx();
+
+        // When
+        repo.add(&bm);
+
+        // Then
+        let retrieved_bm = repo.get(bm.id());
+
+        assert_eq!(bm.available_funds(), retrieved_bm.available_funds());
+        assert_eq!(bm.transactions(), retrieved_bm.transactions());
+    }
 }

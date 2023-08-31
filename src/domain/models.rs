@@ -3,25 +3,25 @@
 
 use uuid::Uuid;
 
-use std::{collections::HashMap, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap};
 
 #[derive(Debug)]
 struct User {
     id: String,
-    budgets: HashMap<String, BudgetManager>
+    budgets: HashMap<String, BudgetManager>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BudgetManager {
     budget: Budget,
-    transactions: RefCell<Vec<Transaction>>
+    transactions: RefCell<Vec<Transaction>>,
 }
 
 impl BudgetManager {
     pub fn new(budget: Budget, transactions: RefCell<Vec<Transaction>>) -> Self {
         BudgetManager {
             transactions: transactions,
-            budget
+            budget,
         }
     }
 
@@ -37,6 +37,14 @@ impl BudgetManager {
         &self.budget.id
     }
 
+    pub fn budget(&self) -> &Budget {
+        &self.budget
+    }
+
+    pub fn transactions(&self) -> &RefCell<Vec<Transaction>> {
+        &self.transactions
+    }
+
     pub fn add_tx(&mut self, name: String, value: f64) -> String {
         let tx = Transaction::new(name, value, String::from(self.id()));
         let txc = tx.clone().id;
@@ -50,7 +58,7 @@ impl BudgetManager {
     pub fn find_tx_index(&self, id: &str) -> Result<usize, String> {
         for (i, tx) in self.transactions.borrow().iter().enumerate() {
             if &tx.id == id {
-                return Ok(i)
+                return Ok(i);
             } else {
                 continue;
             }
@@ -62,7 +70,7 @@ impl BudgetManager {
     pub fn update_tx(&mut self, id: &str, val: f64) {
         let idx = match self.find_tx_index(id) {
             Ok(i) => i,
-            _ => panic!("Transaction not found")
+            _ => panic!("Transaction not found"),
         };
 
         let mut txs = self.transactions.borrow_mut();
@@ -73,11 +81,10 @@ impl BudgetManager {
         self.budget.withdraw(&tx.value);
     }
 
-
     pub fn remove_tx(&mut self, id: &str) {
         let idx = match self.find_tx_index(id) {
             Ok(i) => i,
-            _ => panic!("Transaction not found")
+            _ => panic!("Transaction not found"),
         };
 
         let mut txs = self.transactions.borrow_mut();
@@ -110,6 +117,14 @@ impl Budget {
 
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn total(&self) -> &f64 {
+        &self.total
     }
 
     fn available_funds(&self) -> f64 {
@@ -153,11 +168,28 @@ impl Transaction {
     }
 
     pub fn load(id: String, name: String, value: f64, budget_id: String) -> Self {
-        Transaction { id, name, value, budget_id }
+        Transaction {
+            id,
+            name,
+            value,
+            budget_id,
+        }
     }
 
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn value(&self) -> &f64 {
+        &self.value
+    }
+
+    pub fn budget_id(&self) -> &str {
+        &self.budget_id
     }
 
     fn rename(&mut self, name: String) {
@@ -168,7 +200,6 @@ impl Transaction {
         self.value = value;
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -225,7 +256,11 @@ mod tests {
 
     #[test]
     fn tx_can_get_renamed() {
-        let mut tx = Transaction::new(String::from("cheeseborger"), 3.99_f64, String::from("abc123"));
+        let mut tx = Transaction::new(
+            String::from("cheeseborger"),
+            3.99_f64,
+            String::from("abc123"),
+        );
 
         tx.rename(String::from("cheeseburger"));
 
@@ -234,7 +269,11 @@ mod tests {
 
     #[test]
     fn tx_can_have_value_updated() {
-        let mut tx = Transaction::new(String::from("cheeseborger"), 3.99_f64, String::from("abc123"));
+        let mut tx = Transaction::new(
+            String::from("cheeseborger"),
+            3.99_f64,
+            String::from("abc123"),
+        );
 
         tx.update_value(4.99_f64);
 
