@@ -1,4 +1,4 @@
 mod domain;
-mod services;
-mod adapters;
+pub mod services;
+pub mod adapters;
 pub mod cli;

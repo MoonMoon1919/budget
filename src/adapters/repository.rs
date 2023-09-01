@@ -14,7 +14,7 @@ pub trait Repository {
     fn delete(&self, #[allow(unused)] id: &str) {}
 }
 
-struct SQLiteRepository {
+pub struct SQLiteRepository {
     conn: RefCell<Connection>,
 }
 

@@ -4,62 +4,78 @@ use clap::{Args, Parser, Subcommand};
 #[derive(Debug, Parser)]
 #[command(name = "budget")]
 #[command(about = "Simple CLI app for creating a budget", long_about = None)]
-struct Cli {
+pub struct Cli {
     #[command(subcommand)]
-    commands: Commands
+    pub commands: Commands
 }
 
 #[derive(Debug, Subcommand)]
-enum Commands {
+pub enum Commands {
     Budget(BudgetArgs),
     Transaction(TransactionArgs)
 }
 
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
-struct BudgetArgs {
+pub struct BudgetArgs {
     #[command(subcommand)]
-    commands: BudgetCommands
+    pub commands: BudgetCommands
 }
 
 #[derive(Debug, Subcommand)]
-enum BudgetCommands {
+pub enum BudgetCommands {
     Add {
+        #[arg(short, long)]
         name: String,
+        #[arg(short, long)]
         total: f64
     },
     List,
-    Delete,
+    Delete {
+        #[arg(short, long)]
+        id: String
+    },
 }
 
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
-struct TransactionArgs {
+pub struct TransactionArgs {
     #[command(subcommand)]
-    commands: TransactionCommands
+    pub commands: TransactionCommands
 }
 
 #[derive(Debug, Subcommand)]
-enum TransactionCommands {
+pub enum TransactionCommands {
     Add {
+        #[arg(short, long)]
         budget_id: String,
+
+        #[arg(short, long)]
         name: String,
-        value: f64
+
+        #[arg(short, long)]
+        amount: f64
     },
     List,
     Update {
+        #[arg(short, long)]
         budget_id: String,
+
+        #[arg(short, long)]
         id: String,
-        value: f64
+
+        #[arg(short, long)]
+        amount: f64
     },
     Remove {
+        #[arg(short, long)]
         budget_id: String,
+
+        #[arg(short, long)]
         id: String,
     }
 }
 
-pub fn parse_args() {
-    let args = Cli::parse();
-
-    println!("{:?}", args);
+pub fn parse_args() -> Cli {
+    Cli::parse()
 }

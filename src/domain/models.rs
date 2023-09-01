@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 
 use std::{cell::RefCell, collections::HashMap};
 
@@ -11,7 +12,7 @@ struct User {
     budgets: HashMap<String, BudgetManager>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BudgetManager {
     budget: Budget,
     transactions: RefCell<Vec<Transaction>>,
@@ -95,7 +96,7 @@ impl BudgetManager {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Budget {
     id: String,
     name: String,
@@ -149,7 +150,7 @@ impl Budget {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Transaction {
     id: String,
     name: String,

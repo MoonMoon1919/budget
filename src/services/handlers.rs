@@ -8,20 +8,20 @@ use crate::domain::models;
 /// This module contains handler functions that call business logic and persistence layers
 /// This module is the API for consumers, e.g., an web API or CLI that is implemented later
 
-struct CreateBudget {
+pub struct CreateBudget {
     budget_name: String,
     total: f64,
 }
 
 impl CreateBudget {
-    fn new(budget_name: String, total: f64) -> Self {
+    pub fn new(budget_name: String, total: f64) -> Self {
         CreateBudget {
             budget_name,
             total,
         }
     }
 
-    fn run<T: repository::Repository>(&self, repo: &T) -> models::BudgetManager {
+    pub fn run<T: repository::Repository>(&self, repo: &T) -> models::BudgetManager {
         let budget = models::Budget::new(self.budget_name.clone(), self.total);
         let budget_manager = models::BudgetManager::new(budget, RefCell::new(vec![]));
 
@@ -31,14 +31,14 @@ impl CreateBudget {
     }
 }
 
-struct AddTransaction {
+pub struct AddTransaction {
     budget_id: String,
     name: String,
     value: f64,
 }
 
 impl AddTransaction {
-    fn new(budget_id: String, name: String, value: f64) -> Self {
+    pub fn new(budget_id: String, name: String, value: f64) -> Self {
         AddTransaction {
             budget_id,
             name,
@@ -46,7 +46,7 @@ impl AddTransaction {
         }
     }
 
-    fn run<T: repository::Repository>(&self, repo: &T) -> String {
+    pub fn run<T: repository::Repository>(&self, repo: &T) -> String {
         let mut budget_manager = repo.get(&self.budget_id);
 
         let tx_id = budget_manager.add_tx(self.name.clone(), self.value);
@@ -57,20 +57,20 @@ impl AddTransaction {
     }
 }
 
-struct RemoveTransaction {
+pub struct RemoveTransaction {
     budget_id: String,
     transaction_id: String,
 }
 
 impl RemoveTransaction {
-    fn new(budget_id: String, transaction_id: String) -> Self {
+    pub fn new(budget_id: String, transaction_id: String) -> Self {
         RemoveTransaction {
             budget_id,
             transaction_id,
         }
     }
 
-    fn run<T: repository::Repository>(&self, repo: &T) {
+    pub fn run<T: repository::Repository>(&self, repo: &T) {
         let mut budget_manager = repo.get(&self.budget_id);
 
         budget_manager.remove_tx(&self.transaction_id);
@@ -79,14 +79,14 @@ impl RemoveTransaction {
     }
 }
 
-struct UpdateTransaction {
+pub struct UpdateTransaction {
     budget_id: String,
     transaction_id: String,
     new_val: f64,
 }
 
 impl UpdateTransaction {
-    fn new(budget_id: String, transaction_id: String, new_val: f64) -> Self {
+    pub fn new(budget_id: String, transaction_id: String, new_val: f64) -> Self {
         UpdateTransaction {
             budget_id,
             transaction_id,
@@ -94,7 +94,7 @@ impl UpdateTransaction {
         }
     }
 
-    fn run<T: repository::Repository>(&self, repo: &T) {
+    pub fn run<T: repository::Repository>(&self, repo: &T) {
         let mut budget_manager = repo.get(&self.budget_id);
 
         budget_manager.update_tx(&self.transaction_id, self.new_val);
