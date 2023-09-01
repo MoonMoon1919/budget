@@ -135,8 +135,32 @@ impl Repository for SQLiteRepository {
 mod tests {
     use super::*;
 
-    fn budget_id() -> &'static str {
-        "576bc364-7574-40ce-92ca-f488c613b7ea"
+    fn create_tables(repo: &SQLiteRepository) {
+        let conn = repo.conn.borrow();
+
+        conn.execute("PRAGMA foreign_keys = ON", ()).unwrap();
+        conn.execute("CREATE TABLE IF NOT EXISTS budgets (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            total REAL
+        )", ()).unwrap();
+
+        conn.execute("CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            value REAL,
+            budget_id TEXT NOT NULL,
+            FOREIGN KEY (budget_id)
+               REFERENCES budgets (id)
+               ON DELETE CASCADE
+        )", ()).unwrap();
+    }
+
+    fn drop_tables(repo: &SQLiteRepository) {
+        let conn = repo.conn.borrow();
+
+        conn.execute("DROP TABLE budgets", ()).unwrap();
+        conn.execute("DROP TABLE transactions", ()).unwrap();
     }
 
     fn build_budget_manager_with_tx() -> models::BudgetManager {
@@ -150,7 +174,9 @@ mod tests {
     #[test]
     fn can_add_retrieve_budget_manager_aggregate() {
         // Given
-        let repo = SQLiteRepository::new(String::from("budgets.db"));
+        let repo = SQLiteRepository::new(String::from("budgets-int.db"));
+        create_tables(&repo);
+
         let bm = build_budget_manager_with_tx();
 
         // When
@@ -161,13 +187,18 @@ mod tests {
 
         assert_eq!(bm.available_funds(), retrieved_bm.available_funds());
         assert_eq!(bm.transactions(), retrieved_bm.transactions());
+
+        // Drop tables
+        drop_tables(&repo);
     }
 
     #[test]
     #[should_panic]
     fn can_delete_budget_manager_aggregate() {
         // Given
-        let repo = SQLiteRepository::new(String::from("budgets.db"));
+        let repo = SQLiteRepository::new(String::from("budgets-int.db"));
+        create_tables(&repo);
+
         let bm = build_budget_manager_with_tx();
         repo.add(&bm);
 
@@ -176,5 +207,8 @@ mod tests {
 
         // Then
         repo.get(&bm.id());
+
+        // Cleanup
+        drop_tables(&repo);
     }
 }

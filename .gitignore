@@ -2,3 +2,4 @@
 /Cargo.lock
 .vscode
 budgets.db
+budgets-int.db
