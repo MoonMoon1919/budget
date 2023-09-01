@@ -30,7 +30,8 @@ fn main() {
             match txargs.commands {
                 cli_args::TransactionCommands::Add { budget_id, name, amount } => {
                     let cmd = handlers::AddTransaction::new(budget_id, name, amount);
-                    cmd.run(&repo);
+                    let result = cmd.run(&repo);
+                    println!("{}", serde_json::to_string_pretty(&result).unwrap());
                 }
                 cli_args::TransactionCommands::List => {
                     todo!()
