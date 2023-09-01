@@ -9,15 +9,13 @@ use crate::domain::models;
 /// This module is the API for consumers, e.g., an web API or CLI that is implemented later
 
 struct CreateBudget {
-    user_id: String,
     budget_name: String,
     total: f64,
 }
 
 impl CreateBudget {
-    fn new(user_id: String, budget_name: String, total: f64) -> Self {
+    fn new(budget_name: String, total: f64) -> Self {
         CreateBudget {
-            user_id,
             budget_name,
             total,
         }
@@ -34,16 +32,14 @@ impl CreateBudget {
 }
 
 struct AddTransaction {
-    user_id: String,
     budget_id: String,
     name: String,
     value: f64,
 }
 
 impl AddTransaction {
-    fn new(user_id: String, budget_id: String, name: String, value: f64) -> Self {
+    fn new(budget_id: String, name: String, value: f64) -> Self {
         AddTransaction {
-            user_id,
             budget_id,
             name,
             value,
@@ -62,15 +58,13 @@ impl AddTransaction {
 }
 
 struct RemoveTransaction {
-    user_id: String,
     budget_id: String,
     transaction_id: String,
 }
 
 impl RemoveTransaction {
-    fn new(user_id: String, budget_id: String, transaction_id: String) -> Self {
+    fn new(budget_id: String, transaction_id: String) -> Self {
         RemoveTransaction {
-            user_id,
             budget_id,
             transaction_id,
         }
@@ -86,16 +80,14 @@ impl RemoveTransaction {
 }
 
 struct UpdateTransaction {
-    user_id: String,
     budget_id: String,
     transaction_id: String,
     new_val: f64,
 }
 
 impl UpdateTransaction {
-    fn new(user_id: String, budget_id: String, transaction_id: String, new_val: f64) -> Self {
+    fn new(budget_id: String, transaction_id: String, new_val: f64) -> Self {
         UpdateTransaction {
-            user_id,
             budget_id,
             transaction_id,
             new_val,
@@ -117,11 +109,6 @@ mod tests {
     use crate::adapters::repository::{self, Repository};
     use std::cell::RefCell;
     use std::collections::HashMap;
-    use uuid::Uuid;
-
-    fn user_id() -> String {
-        Uuid::new_v4().to_string()
-    }
 
     fn budget_name() -> String {
         String::from("my-budget")
@@ -180,7 +167,7 @@ mod tests {
     #[test]
     fn user_can_create_budget() {
         // Given
-        let cmd = CreateBudget::new(user_id(), budget_name(), budget_max());
+        let cmd = CreateBudget::new(budget_name(), budget_max());
         let repo = InMemoryRepository::new();
 
         // When
@@ -206,7 +193,6 @@ mod tests {
 
         // Set up the command
         let cmd = AddTransaction::new(
-            user_id(),
             budget_manager.id().to_string(),
             String::from("cheeseborger"),
             9.99_f64,
@@ -232,7 +218,7 @@ mod tests {
 
         // Set up the command we're going to test!
         let cmd =
-            RemoveTransaction::new(user_id(), budget_manager.id().to_string(), transaction_id);
+            RemoveTransaction::new(budget_manager.id().to_string(), transaction_id);
 
         // When
         cmd.run(&repo);
@@ -254,7 +240,6 @@ mod tests {
 
         // Set up the command we're going to test
         let cmd = UpdateTransaction::new(
-            user_id(),
             budget_manager.id().to_string(),
             transaction_id,
             4.99_f64,
