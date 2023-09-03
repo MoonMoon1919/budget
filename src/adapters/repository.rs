@@ -52,8 +52,7 @@ fn insert_transactions<'a>(tx: &'a Transaction, transactions: Ref<Vec<models::Tr
 fn insert_budget<'a>(tx: &'a Transaction, budget: &models::Budget) {
     let mut statement = tx
         .prepare(
-            "INSERT INTO budgets
-                                                        (id, name, total) VALUES (?1, ?2, ?3)",
+            "INSERT or IGNORE INTO budgets (id, name, total) VALUES (?1, ?2, ?3)",
         )
         .unwrap();
 
