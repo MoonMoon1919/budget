@@ -11,8 +11,8 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    Budget(BudgetArgs),
-    Transaction(TransactionArgs)
+    Budgets(BudgetArgs),
+    Transactions(TransactionArgs)
 }
 
 #[derive(Debug, Args)]
@@ -56,7 +56,10 @@ pub enum TransactionCommands {
         #[arg(short, long)]
         amount: f64
     },
-    List,
+    List {
+        #[arg(short, long)]
+        budget_id: String,
+    },
     Update {
         #[arg(short, long)]
         budget_id: String,

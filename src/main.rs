@@ -10,10 +10,10 @@ fn main() {
     let repo = repository::SQLiteRepository::new(format!("{}/budgets.db", pwd.to_string_lossy()));
 
     match args.commands {
-        cli_args::Commands::Budget(bargs) => {
+        cli_args::Commands::Budgets(bargs) => {
             cli_entrypoints::handle_budget(bargs, &repo);
         }
-        cli_args::Commands::Transaction(txargs) => {
+        cli_args::Commands::Transactions(txargs) => {
             cli_entrypoints::handle_transaction(txargs, &repo);
         }
     }

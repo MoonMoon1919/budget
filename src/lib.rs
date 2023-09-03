@@ -3,3 +3,4 @@ pub mod cli;
 mod domain;
 pub mod entrypoints;
 mod services;
+mod views;
