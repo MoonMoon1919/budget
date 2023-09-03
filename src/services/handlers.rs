@@ -31,6 +31,20 @@ impl CreateBudget {
     }
 }
 
+pub struct DeleteBudget {
+    id: String,
+}
+
+impl DeleteBudget {
+    pub fn new(id: String) -> Self {
+        DeleteBudget { id }
+    }
+
+    pub fn run<T: repository::Repository>(&self, repo: &T) {
+        repo.delete(&self.id);
+    }
+}
+
 pub struct AddTransaction {
     budget_id: String,
     name: String,

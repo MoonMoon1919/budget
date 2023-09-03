@@ -16,8 +16,8 @@ pub fn handle_budget(args: cli_args::BudgetArgs, repo: &repository::SQLiteReposi
 
         }
         cli_args::BudgetCommands::Delete { id } => {
-            println!("{}", id);
-            todo!()
+            let cmd = handlers::DeleteBudget::new(id);
+            cmd.run(repo);
         }
     }
 }
