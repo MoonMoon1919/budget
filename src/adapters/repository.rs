@@ -15,7 +15,7 @@ pub trait Repository {
 }
 
 pub struct SQLiteRepository {
-    conn: RefCell<Connection>,
+    pub conn: RefCell<Connection>,
 }
 
 impl SQLiteRepository {
@@ -52,7 +52,7 @@ fn insert_transactions<'a>(tx: &'a Transaction, transactions: Ref<Vec<models::Tr
 fn insert_budget<'a>(tx: &'a Transaction, budget: &models::Budget) {
     let mut statement = tx
         .prepare(
-            "INSERT or IGNORE INTO budgets (id, name, total) VALUES (?1, ?2, ?3)",
+            "INSERT INTO budgets (id, name, total) VALUES (?1, ?2, ?3) ON CONFLICT (id) DO UPDATE SET total=?3",
         )
         .unwrap();
 
